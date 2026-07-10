@@ -2,6 +2,7 @@ package xyz.meowing.lattice.command.functions
 
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
+import java.lang.reflect.ParameterizedType
 
 /**
  * # FunctionInvoker
@@ -59,7 +60,21 @@ sealed interface FunctionInvoker<T> {
                 mHandle = MethodHandles.lookup().unreflect(invokeMethod).bindTo(lambda)
 
                 if (parameterTypes.isEmpty()) {
-                    parameters = invokeMethod.parameterTypes.mapIndexed { index, type ->
+                    val rawTypes = invokeMethod.parameterTypes
+                    // Kotlin K2/IR may compile lambdas so the only non-bridge invoke method
+                    // has erased Object types. Recover concrete types from the FunctionN
+                    // generic interface that the lambda class still declares.
+                    val actualTypes = if (rawTypes.isNotEmpty() && rawTypes.all { it == Any::class.java }) {
+                        recoverFromFunctionInterface(lambdaClass, rawTypes.size)
+                            ?: throw IllegalStateException(
+                                "Cannot recover parameter types for lambda ${lambdaClass.name}. " +
+                                "Interfaces: ${lambdaClass.genericInterfaces.toList()}. " +
+                                "Use a typed runs { p: Type -> } overload instead of Function<Unit>."
+                            )
+                    } else {
+                        rawTypes
+                    }
+                    parameters = actualTypes.mapIndexed { index, type ->
                         Parameter("param$index", type, false)
                     }
                 } else {
@@ -75,6 +90,27 @@ sealed interface FunctionInvoker<T> {
         @Suppress("UNCHECKED_CAST")
         override fun invoke(arguments: List<Any?>): T {
             return mHandle.invokeWithArguments(arguments) as T
+        }
+
+        private companion object {
+            fun recoverFromFunctionInterface(lambdaClass: Class<*>, paramCount: Int): Array<Class<*>>? {
+                for (iface in lambdaClass.genericInterfaces) {
+                    val pt = iface as? ParameterizedType ?: continue
+                    val raw = pt.rawType as? Class<*> ?: continue
+                    if (!raw.name.startsWith("kotlin.jvm.functions.Function")) continue
+                    val args = pt.actualTypeArguments
+                    // FunctionN<P1,...,Pn,R> — last arg is return type
+                    if (args.size != paramCount + 1) continue
+                    return Array(paramCount) { i ->
+                        when (val arg = args[i]) {
+                            is Class<*> -> arg
+                            is ParameterizedType -> arg.rawType as? Class<*> ?: Any::class.java
+                            else -> Any::class.java
+                        }
+                    }
+                }
+                return null
+            }
         }
     }
 

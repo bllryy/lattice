@@ -95,10 +95,10 @@ abstract class UIScreen(screenName: String = "Lattice-Screen") : Screen(Componen
         super.onClose()
     }
 
-    /** Opens this screen on the next client tick, safe to call from any thread. */
+    /** Opens this screen on the render thread, safe to call from any thread. */
     fun display() {
         TimeScheduler.schedule(50) {
-            minecraft.setScreen(this@UIScreen)
+            minecraft.execute { minecraft.setScreen(this@UIScreen) }
         }
     }
 }

@@ -2,6 +2,7 @@ package xyz.meowing.lattice.render
 
 import com.mojang.blaze3d.opengl.GlStateManager
 import com.mojang.blaze3d.systems.RenderSystem
+import org.apache.logging.log4j.LogManager
 import org.lwjgl.nanovg.NVGColor
 import org.lwjgl.nanovg.NVGPaint
 import org.lwjgl.nanovg.NanoSVG
@@ -11,6 +12,7 @@ import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL13
 import org.lwjgl.opengl.GL20
 import org.lwjgl.opengl.GL30
+import org.lwjgl.opengl.GL33C
 import org.lwjgl.stb.STBImage
 import org.lwjgl.system.MemoryUtil
 import xyz.meowing.lattice.client.Client.minecraft
@@ -18,7 +20,6 @@ import xyz.meowing.lattice.render.Color.Companion.alpha
 import xyz.meowing.lattice.render.Color.Companion.blue
 import xyz.meowing.lattice.render.Color.Companion.green
 import xyz.meowing.lattice.render.Color.Companion.red
-import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.nio.ByteBuffer
 import kotlin.math.max
@@ -48,23 +49,30 @@ object NVGRenderer : Renderer {
     // Resolved reflectively once: GlTexture.getFbo(GlStateManager$DirectStateAccess, depth) is not public API.
     private var fboLookup: Pair<Any, Method>? = null
     private var fboLookupFailed = false
+    private var loggedFbo = false
 
-    private fun mainFramebuffer(colorTex: Any): Int {
+    private fun fieldValue(obj: Any, name: String): Any? {
+        var clazz: Class<*>? = obj.javaClass
+        while (clazz != null) {
+            try {
+                return clazz.getDeclaredField(name).apply { isAccessible = true }.get(obj)
+            } catch (_: NoSuchFieldException) {
+                clazz = clazz.superclass
+            }
+        }
+        return null
+    }
+
+    private fun mainFramebuffer(colorTex: Any, depthTex: Any?): Int {
         if (fboLookupFailed) return 0
 
         try {
             val lookup = fboLookup ?: run {
                 val device = RenderSystem.getDevice() ?: return 0
-                var dsaField: Field? = null
-                var clazz: Class<*>? = device.javaClass
-                while (clazz != null && dsaField == null) {
-                    try {
-                        dsaField = clazz.getDeclaredField("directStateAccess")
-                    } catch (_: NoSuchFieldException) {}
-                    clazz = clazz.superclass
-                }
-                dsaField?.isAccessible = true
-                val dsa = dsaField?.get(device) ?: throw IllegalStateException("no directStateAccess")
+                // GpuDevice wraps the GL backend (GlDevice), which owns directStateAccess.
+                val backend = fieldValue(device, "backend") ?: device
+                val dsa = fieldValue(backend, "directStateAccess")
+                    ?: throw IllegalStateException("no directStateAccess")
 
                 var getFbo: Method? = null
                 var texClazz: Class<*>? = colorTex.javaClass
@@ -78,9 +86,12 @@ object NVGRenderer : Renderer {
                 Pair(dsa, getFbo).also { fboLookup = it }
             }
 
-            return (lookup.second.invoke(colorTex, lookup.first, null) as? Int) ?: 0
-        } catch (_: Exception) {
+            // Pass the depth texture so getFbo returns the FBO with the depth+stencil
+            // attachment; NanoVG's stencil fills render nothing on a color-only FBO.
+            return (lookup.second.invoke(colorTex, lookup.first, depthTex) as? Int) ?: 0
+        } catch (e: Throwable) {
             fboLookupFailed = true
+            LogManager.getLogger("Lattice").warn("FBO lookup failed: device=${RenderSystem.getDevice()?.javaClass?.name} color=${colorTex.javaClass.name} depth=${depthTex?.javaClass?.name}", e)
             return 0
         }
     }
@@ -95,9 +106,22 @@ object NVGRenderer : Renderer {
         val colorTex = renderTarget.getColorTexture() ?: return
         if (vg == -1L) return
 
-        GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, mainFramebuffer(colorTex))
+        val fbo = mainFramebuffer(colorTex, renderTarget.getDepthTexture())
+        if (!loggedFbo) {
+            loggedFbo = true
+            LogManager.getLogger("Lattice").info("NVG beginFrame: fbo=$fbo failed=$fboLookupFailed size=${width}x$height target=${renderTarget.width}x${renderTarget.height}")
+        }
+        GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo)
         GlStateManager._viewport(0, 0, renderTarget.width, renderTarget.height)
         GlStateManager._activeTexture(GL30.GL_TEXTURE0)
+
+        // NanoVG binds its own VAO without restoring the previous one.
+        GLState.previousVao = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING)
+
+        // Unbind MC's sampler from unit 0 so NanoVG's font atlas texture samples
+        // with its own parameters; otherwise glyphs render blank while shapes are fine.
+        GLState.previousSampler = GL11.glGetInteger(GL33C.GL_SAMPLER_BINDING)
+        GL33C.glBindSampler(0, 0)
 
         NanoVG.nvgBeginFrame(vg, width, height, 1f)
         NanoVG.nvgTextAlign(vg, NanoVG.NVG_ALIGN_LEFT or NanoVG.NVG_ALIGN_TOP)
@@ -114,12 +138,22 @@ object NVGRenderer : Renderer {
         GlStateManager._enableBlend()
         GlStateManager._blendFuncSeparate(770, 771, 1, 0)
 
+        // NanoVG's stencil strokes can leave the stencil test on and the color mask off.
+        GL11.glDisable(GL11.GL_STENCIL_TEST)
+        GL11.glColorMask(true, true, true, true)
+
         if (GLState.previousProgram != -1) GlStateManager._glUseProgram(GLState.previousProgram)
+
+        // Restore the sampler on unit 0 that we unbound for the font atlas.
+        GlStateManager._activeTexture(GL30.GL_TEXTURE0)
+        if (GLState.previousSampler != -1) GL33C.glBindSampler(0, GLState.previousSampler)
 
         if (GLState.previousActiveTexture != -1) {
             GlStateManager._activeTexture(GLState.previousActiveTexture)
             if (GLState.previousBoundTexture != -1) GlStateManager._bindTexture(GLState.previousBoundTexture)
         }
+
+        if (GLState.previousVao != -1) GL30.glBindVertexArray(GLState.previousVao)
 
         GlStateManager._glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0)
         GLState.drawing = false

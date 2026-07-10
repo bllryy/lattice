@@ -1,7 +1,5 @@
 package xyz.meowing.lattice
 
-import net.minecraft.resources.Identifier
-import xyz.meowing.lattice.client.Client.minecraft
 import xyz.meowing.lattice.event.EventBus
 import xyz.meowing.lattice.render.Font
 import xyz.meowing.lattice.render.NVGRenderer
@@ -14,10 +12,7 @@ object Lattice {
     val eventBus = EventBus()
 
     @JvmStatic
-    val defaultFont: Font by lazy {
-        val id = Identifier.fromNamespaceAndPath(MOD_ID, "font.ttf")
-        Font("Default", minecraft.resourceManager.getResourceStack(id).first().open())
-    }
+    val defaultFont: Font by lazy { Font("Default", "/assets/$MOD_ID/font.ttf") }
 
     private var _renderer: Renderer? = null
 

@@ -12,5 +12,11 @@ object GLState {
     var previousProgram = -1
 
     @JvmStatic
+    var previousSampler = -1
+
+    @JvmStatic
+    var previousVao = -1
+
+    @JvmStatic
     var drawing = false
 }

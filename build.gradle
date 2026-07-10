@@ -24,9 +24,13 @@ dependencies {
 	implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
 	implementation "com.mojang:brigadier:1.2.9"
 
+	// NanoVG is not part of Minecraft's LWJGL modules, so bundle it (and its
+	// natives) into the mod jar via include so it is present at runtime.
 	implementation "org.lwjgl:lwjgl-nanovg:${project.nanovg_version}"
+	include "org.lwjgl:lwjgl-nanovg:${project.nanovg_version}"
 	['linux', 'linux-arm64', 'windows', 'macos', 'macos-arm64'].each { platform ->
 		runtimeOnly "org.lwjgl:lwjgl-nanovg:${project.nanovg_version}:natives-${platform}"
+		include "org.lwjgl:lwjgl-nanovg:${project.nanovg_version}:natives-${platform}"
 	}
 }
 
@@ -62,4 +66,18 @@ publishing {
 	repositories {
 		mavenLocal()
 	}
+}
+
+// Copies the built lattice and example mod jars into a Minecraft mods folder.
+// Override the target with -PmodsDir=/path/to/mods (defaults to the Prism instance).
+def defaultModsDir = "${System.getProperty('user.home')}/.local/share/PrismLauncher/instances/Lattice testing/minecraft/mods"
+
+tasks.register('deployMods', Copy) {
+	group = 'lattice'
+	description = 'Copies the lattice and example mod jars into a Minecraft mods folder.'
+	dependsOn tasks.named('jar'), project(':example').tasks.named('jar')
+
+	from tasks.named('jar').flatMap { it.archiveFile }
+	from project(':example').tasks.named('jar').flatMap { it.archiveFile }
+	into providers.gradleProperty('modsDir').orElse(defaultModsDir)
 }

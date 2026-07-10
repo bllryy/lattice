@@ -72,8 +72,31 @@ class Executable : Node() {
      * - Use a [ParameterModifier] to apply a custom parser to a certain parameter.
      * You need to ensure you're parsing for the correct class.
      */
-    fun runs(function: Function<Unit>) {
-        funInvoker = FunctionInvoker.from(function)
+    fun runs(block: () -> Unit) = define(block)
+
+    inline fun <reified P1> runs(noinline block: (P1) -> Unit) =
+        define(block, P1::class.java)
+
+    inline fun <reified P1, reified P2> runs(noinline block: (P1, P2) -> Unit) =
+        define(block, P1::class.java, P2::class.java)
+
+    inline fun <reified P1, reified P2, reified P3> runs(noinline block: (P1, P2, P3) -> Unit) =
+        define(block, P1::class.java, P2::class.java, P3::class.java)
+
+    inline fun <reified P1, reified P2, reified P3, reified P4> runs(noinline block: (P1, P2, P3, P4) -> Unit) =
+        define(block, P1::class.java, P2::class.java, P3::class.java, P4::class.java)
+
+    inline fun <reified P1, reified P2, reified P3, reified P4, reified P5> runs(noinline block: (P1, P2, P3, P4, P5) -> Unit) =
+        define(block, P1::class.java, P2::class.java, P3::class.java, P4::class.java, P5::class.java)
+
+    /**
+     * Low-level entry point that builds the invoker from a function and its
+     * explicit parameter types. Prefer the typed [runs] overloads, which capture
+     * the types via reified generics instead of relying on runtime reflection.
+     */
+    @PublishedApi
+    internal fun define(function: Function<Unit>, vararg explicitTypes: Class<*>) {
+        funInvoker = FunctionInvoker.from(function, *explicitTypes)
 
         for (parameter in funInvoker.parameters) {
             val modifier = parameterModifiers[parameter.name]

@@ -94,15 +94,29 @@ open class LiteralNode(val name: String) : Node() {
     }
 
     /**
-     * Creates an [Executable] and apply function directly.
+     * Creates an [Executable] that runs [block] with typed command arguments.
      *
-     * This won't allow you to apply [modifiers][Executable.ParameterModifier]
-     * to the function's parameters.
-     *
-     * @see runs
+     * Each parameter type is captured via reified generics, so it works with
+     * Kotlin's invokedynamic lambdas where the types are erased at runtime.
      */
-    fun runs(function: Function<Unit>) = executable {
-        runs(function)
+    inline fun <reified P1> runs(noinline block: (P1) -> Unit) = executable {
+        define(block, P1::class.java)
+    }
+
+    inline fun <reified P1, reified P2> runs(noinline block: (P1, P2) -> Unit) = executable {
+        define(block, P1::class.java, P2::class.java)
+    }
+
+    inline fun <reified P1, reified P2, reified P3> runs(noinline block: (P1, P2, P3) -> Unit) = executable {
+        define(block, P1::class.java, P2::class.java, P3::class.java)
+    }
+
+    inline fun <reified P1, reified P2, reified P3, reified P4> runs(noinline block: (P1, P2, P3, P4) -> Unit) = executable {
+        define(block, P1::class.java, P2::class.java, P3::class.java, P4::class.java)
+    }
+
+    inline fun <reified P1, reified P2, reified P3, reified P4, reified P5> runs(noinline block: (P1, P2, P3, P4, P5) -> Unit) = executable {
+        define(block, P1::class.java, P2::class.java, P3::class.java, P4::class.java, P5::class.java)
     }
 
     /**

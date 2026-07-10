@@ -19,7 +19,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder.literal
  * The tree must always end in an [Executable][xyz.meowing.lattice.command.nodes.Executable],
  * which serves as an exit point for a command.
  */
-open class Commodore(private val root: LiteralNode) {
+open class Commodore(@PublishedApi internal val root: LiteralNode) {
 
     constructor(
         vararg name: String,
@@ -35,9 +35,17 @@ open class Commodore(private val root: LiteralNode) {
     /**
      * DSL access to the root node for object-style definitions.
      */
-    fun runs(function: Function<Unit>) = root.runs(function)
-
     fun runs(block: () -> Unit) = root.runs(block)
+
+    inline fun <reified P1> runs(noinline block: (P1) -> Unit) = root.runs(block)
+
+    inline fun <reified P1, reified P2> runs(noinline block: (P1, P2) -> Unit) = root.runs(block)
+
+    inline fun <reified P1, reified P2, reified P3> runs(noinline block: (P1, P2, P3) -> Unit) = root.runs(block)
+
+    inline fun <reified P1, reified P2, reified P3, reified P4> runs(noinline block: (P1, P2, P3, P4) -> Unit) = root.runs(block)
+
+    inline fun <reified P1, reified P2, reified P3, reified P4, reified P5> runs(noinline block: (P1, P2, P3, P4, P5) -> Unit) = root.runs(block)
 
     fun literal(string: String, block: LiteralNode.() -> Unit = {}): LiteralNode {
         return root.literal(string, block)
