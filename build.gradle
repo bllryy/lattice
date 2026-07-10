@@ -1,0 +1,65 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+	id 'org.jetbrains.kotlin.jvm' version "${kotlin_version}"
+}
+
+version = "${mod_version}"
+group = project.maven_group
+
+base {
+	archivesName = "lattice-${project.minecraft_version}-fabric"
+}
+
+repositories {
+	mavenCentral()
+}
+
+// 26.1.2 is non-obfuscated: fabric-loom without remapping, no mappings dependency.
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation "net.fabricmc:fabric-language-kotlin:${project.fabric_kotlin_version}"
+	implementation "com.mojang:brigadier:1.2.9"
+
+	implementation "org.lwjgl:lwjgl-nanovg:${project.nanovg_version}"
+	['linux', 'linux-arm64', 'windows', 'macos', 'macos-arm64'].each { platform ->
+		runtimeOnly "org.lwjgl:lwjgl-nanovg:${project.nanovg_version}:natives-${platform}"
+	}
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+	it.options.release = 25
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+kotlin {
+	jvmToolchain(25)
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = "lattice-${project.minecraft_version}-fabric"
+			from components.java
+		}
+	}
+	repositories {
+		mavenLocal()
+	}
+}

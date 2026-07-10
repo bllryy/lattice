@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "xyz.meowing.lattice.mixins",
+	"compatibilityLevel": "JAVA_21",
+	"injectors": {
+		"defaultRequire": 0
+	},
+	"client": [
+		"MixinMinecraft",
+		"MixinGameRenderer",
+		"MixinGlStateManager"
+	]
+}

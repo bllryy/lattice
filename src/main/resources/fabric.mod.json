@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "lattice",
+	"version": "${version}",
+	"name": "Lattice",
+	"description": "Unified UI framework for Minecraft clients: NanoVG rendering, constraint layout, widgets, animations, events, and client utilities. Supersedes Knit and Vexel.",
+	"authors": ["Aurielyn", "MrFast"],
+	"contact": {
+		"homepage": "https://meowing.xyz/"
+	},
+	"license": "GPL-3.0-or-later",
+	"icon": "assets/lattice/icon.png",
+	"environment": "client",
+	"mixins": [
+		"mixins.lattice.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~26.1.2",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	}
+}

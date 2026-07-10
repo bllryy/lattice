@@ -1,0 +1,25 @@
+{
+	"schemaVersion": 1,
+	"id": "lattice-example",
+	"version": "${version}",
+	"name": "Lattice Example",
+	"description": "Example mod showing off the Lattice UI framework: screens, widgets, theming, animations, HUD rendering, and the command DSL.",
+	"authors": ["Aurielyn"],
+	"license": "GPL-3.0-or-later",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			{
+				"adapter": "kotlin",
+				"value": "xyz.meowing.lattice.example.LatticeExample"
+			}
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.15.11",
+		"minecraft": "~26.1.2",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*",
+		"lattice": "*"
+	}
+}

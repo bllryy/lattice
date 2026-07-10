@@ -1,0 +1,47 @@
+plugins {
+	id 'net.fabricmc.fabric-loom'
+	id 'org.jetbrains.kotlin.jvm'
+}
+
+version = rootProject.version
+group = rootProject.group
+
+base {
+	archivesName = "lattice-example-${rootProject.minecraft_version}-fabric"
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+	implementation "org.jetbrains.kotlin:kotlin-stdlib"
+	implementation "net.fabricmc:fabric-language-kotlin:${rootProject.fabric_kotlin_version}"
+	implementation "org.lwjgl:lwjgl-nanovg:${rootProject.nanovg_version}"
+
+	implementation project(':')
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+	it.options.release = 25
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+kotlin {
+	jvmToolchain(25)
+}
