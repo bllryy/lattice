@@ -16,6 +16,26 @@ abstraction, and one screen stack.
 - Commodore command DSL over Brigadier, fluent `Component` text builder
 - Tick and wall-clock schedulers, client/input utilities
 
+## Install
+```
+maven { url = 'https://bllry.com/maven' }
+```
+```
+### Version 1.0.0
+
+### Gradle
+```
+implementation 'xyz.meowing:lattice-26.1.2-fabric:1.0.0'
+```
+
+Maven
+```
+<dependency>
+  <groupId>xyz.meowing</groupId>
+  <artifactId>lattice-26.1.2-fabric</artifactId>
+  <version>1.0.0</version>
+</dependency>
+```
 ## Documentation
 
 Full docs live in [`docs/`](docs/README.md) — start with
