@@ -17,18 +17,18 @@ abstraction, and one screen stack.
 - Tick and wall-clock schedulers, client/input utilities
 
 ## Install
-```
-maven { url = 'https://bllry.com/maven' }
-```
-```
+
+```maven { url = 'https://bllry.com/maven' }```
+
 ### Version 1.0.0
 
 ### Gradle
-```
-implementation 'xyz.meowing:lattice-26.1.2-fabric:1.0.0'
-```
+
+```implementation 'xyz.meowing:lattice-26.1.2-fabric:1.0.0```
+
 
 Maven
+
 ```
 <dependency>
   <groupId>xyz.meowing</groupId>
@@ -36,6 +36,7 @@ Maven
   <version>1.0.0</version>
 </dependency>
 ```
+
 ## Documentation
 
 Full docs live in [`docs/`](docs/README.md) — start with
