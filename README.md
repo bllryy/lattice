@@ -1,3 +1,7 @@
+# IMPORTANT NOTICE
+- LIBRARY IS MOVING SOON!!!
+```https://git.bllry.com/lily-admin/lattice```
+
 # Lattice
 
 Unified UI framework for Minecraft clients on Fabric (Minecraft 26.1.2).
