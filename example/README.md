@@ -1,7 +1,8 @@
 # Lattice Example
 
-A small Fabric client mod that exercises the framework end to end. Built as
-part of the root Gradle build (`./gradlew build`).
+A small Fabric client mod that exercises the framework end to end. Built for
+every Minecraft version as part of the root Gradle build (`./gradlew build`),
+into `example/versions/<minecraft>/build/libs/`.
 
 In game:
 

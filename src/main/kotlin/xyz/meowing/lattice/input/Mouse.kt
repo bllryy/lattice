@@ -1,9 +1,14 @@
 package xyz.meowing.lattice.input
 
-import org.lwjgl.glfw.GLFW
+import com.mojang.blaze3d.platform.InputConstants
+//? if >=26.3 {
+import org.lwjgl.sdl.SDLMouse
+//?} else {
+/*import org.lwjgl.glfw.GLFW
+import xyz.meowing.lattice.render.Resolution.windowHandle
+*///?}
 import xyz.meowing.lattice.client.Client.minecraft
 import xyz.meowing.lattice.render.Resolution
-import xyz.meowing.lattice.render.Resolution.windowHandle
 import kotlin.math.max
 
 object Mouse {
@@ -23,11 +28,15 @@ object Mouse {
             if (value) minecraft.mouseHandler.grabMouse() else minecraft.mouseHandler.releaseMouse()
         }
 
-    fun isMouseButton(code: Int): Boolean = code in GLFW.GLFW_MOUSE_BUTTON_1..GLFW.GLFW_MOUSE_BUTTON_8
+    fun isMouseButton(code: Int): Boolean = code in InputConstants.MOUSE_BUTTON_LEFT..InputConstants.MOUSE_BUTTON_8
 
     fun isPressed(code: Int): Boolean {
         if (!isMouseButton(code)) return false
-        val state = GLFW.glfwGetMouseButton(windowHandle, code)
-        return state == GLFW.GLFW_PRESS || state == GLFW.GLFW_REPEAT
+        //? if >=26.3 {
+        // SDL button state is a bitmask where button N is bit N - 1; 0L (NULL) skips the position out-params.
+        return SDLMouse.nSDL_GetMouseState(0L, 0L) and (1 shl (code - 1)) != 0
+        //?} else {
+        /*return GLFW.glfwGetMouseButton(windowHandle, code) == GLFW.GLFW_PRESS
+        *///?}
     }
 }

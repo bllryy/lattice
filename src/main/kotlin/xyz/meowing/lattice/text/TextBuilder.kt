@@ -178,11 +178,7 @@ class TextBuilder internal constructor(
         val base = VanillaText.literal(text)
         var style = base.getStyle()
         color?.let {
-            //#if MC >= 1.21.5
             style = style.withColor(TextColor.fromRgb(it))
-            //#else
-            //$$ style = style.withColor(it)
-            //#endif
         }
 
         bold?.let { style = style.withBold(it) }
@@ -194,40 +190,18 @@ class TextBuilder internal constructor(
 
         clickEvent?.let {
             style = style.withClickEvent(when (it) {
-                //#if MC >= 1.21.5
                 is ClickEvent.OpenUrl -> ModernClickEvent.OpenUrl(it.url)
                 is ClickEvent.RunCommand -> ModernClickEvent.RunCommand(it.command)
                 is ClickEvent.SuggestCommand -> ModernClickEvent.SuggestCommand(it.command)
                 is ClickEvent.CopyToClipboard -> ModernClickEvent.CopyToClipboard(it.text)
                 is ClickEvent.ChangePage -> ModernClickEvent.ChangePage(it.page)
-                //#else
-                //$$ is ClickEvent.OpenUrl -> ModernClickEvent(ModernClickEvent.Action.OPEN_URL, it.url.toString())
-                //$$ is ClickEvent.RunCommand -> ModernClickEvent(ModernClickEvent.Action.RUN_COMMAND, it.command)
-                //$$ is ClickEvent.SuggestCommand -> ModernClickEvent(ModernClickEvent.Action.SUGGEST_COMMAND, it.command)
-                //$$ is ClickEvent.CopyToClipboard -> ModernClickEvent(ModernClickEvent.Action.COPY_TO_CLIPBOARD, it.text)
-                //$$ is ClickEvent.ChangePage -> ModernClickEvent(ModernClickEvent.Action.CHANGE_PAGE, it.page.toString())
-                //#endif
             })
         }
 
         hoverEvent?.let {
             style = style.withHoverEvent(when (it) {
-                //#if MC >= 1.21.5
                 is HoverEvent.ShowText -> ModernHoverEvent.ShowText(it.text.build())
                 is HoverEvent.ShowItem -> ModernHoverEvent.ShowItem(it.stack)
-                //#else
-                //$$ is HoverEvent.ShowText -> ModernHoverEvent(ModernHoverEvent.Action.SHOW_TEXT, it.text.build())
-                //$$ is HoverEvent.ShowItem -> {
-                //$$    ModernHoverEvent(
-                //$$        ModernHoverEvent.Action.SHOW_ITEM,
-                //#if FABRIC
-                //$$        ModernHoverEvent.ItemStackContent(it.stack)
-                //#else
-                //$$        ModernHoverEvent.ItemStackInfo(it.stack)
-                //#endif
-                //$$    )
-                //$$ }
-                //#endif
             })
         }
 

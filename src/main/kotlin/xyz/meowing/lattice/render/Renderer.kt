@@ -3,6 +3,9 @@ package xyz.meowing.lattice.render
 import xyz.meowing.lattice.Lattice.defaultFont
 
 interface Renderer {
+    /** False when this renderer can't draw in the current game (e.g. NanoVG under Vulkan); frames are skipped. */
+    val isAvailable: Boolean get() = true
+
     fun beginFrame(width: Float, height: Float)
     fun endFrame()
 

@@ -1,7 +1,12 @@
 package xyz.meowing.lattice.input
 
-import org.lwjgl.glfw.GLFW
-import xyz.meowing.lattice.render.Resolution.windowHandle
+import com.mojang.blaze3d.platform.InputConstants
+//? if >=26.3 {
+import org.lwjgl.sdl.SDLScancode
+//?} else {
+/*import org.lwjgl.glfw.GLFW
+import xyz.meowing.lattice.render.Resolution.window
+*///?}
 
 object Keyboard {
     @JvmStatic
@@ -22,13 +27,20 @@ object Keyboard {
 
     @JvmStatic
     fun isKeyboardButton(code: Int): Boolean {
-        return code in 0 until GLFW.GLFW_KEY_LAST
+        //? if >=26.3 {
+        return code in 0 until SDLScancode.SDL_SCANCODE_COUNT
+        //?} else {
+        /*return code in 0..GLFW.GLFW_KEY_LAST
+        *///?}
     }
 
     @JvmStatic
     fun isPressed(code: Int): Boolean {
         if (!isKeyboardButton(code)) return false
-        val state = GLFW.glfwGetKey(windowHandle, code)
-        return state == GLFW.GLFW_PRESS || state == GLFW.GLFW_REPEAT
+        //? if >=26.3 {
+        return InputConstants.isKeyDown(code)
+        //?} else {
+        /*return InputConstants.isKeyDown(window, code)
+        *///?}
     }
 }

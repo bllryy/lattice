@@ -1,6 +1,6 @@
 package xyz.meowing.lattice.input
 
-import org.lwjgl.glfw.GLFW
+import com.mojang.blaze3d.platform.InputConstants
 
 data class KeyboardModifiers(
     val isShift: Boolean,
@@ -21,22 +21,22 @@ data class KeyboardModifiers(
 
         fun wrap(mods: Int): KeyboardModifiers {
             return KeyboardModifiers(
-                isShift = (mods and GLFW.GLFW_MOD_SHIFT) != 0,
-                isCtrl = (mods and GLFW.GLFW_MOD_CONTROL) != 0,
-                isAlt = (mods and GLFW.GLFW_MOD_ALT) != 0,
-                isSuper = (mods and GLFW.GLFW_MOD_SUPER) != 0,
+                isShift = (mods and InputConstants.MOD_SHIFT) != 0,
+                isCtrl = (mods and InputConstants.MOD_CONTROL) != 0,
+                isAlt = (mods and InputConstants.MOD_ALT) != 0,
+                isSuper = (mods and InputConstants.MOD_SUPER) != 0,
             )
         }
     }
 
     fun toMods(): Int {
         return listOf(
-            isShift to GLFW.GLFW_MOD_SHIFT,
-            isCtrl to GLFW.GLFW_MOD_CONTROL,
-            isAlt to GLFW.GLFW_MOD_ALT,
-            isSuper to GLFW.GLFW_MOD_SUPER,
-            isCapsLock to GLFW.GLFW_MOD_CAPS_LOCK,
-            isNumLock to GLFW.GLFW_MOD_NUM_LOCK
+            isShift to InputConstants.MOD_SHIFT,
+            isCtrl to InputConstants.MOD_CONTROL,
+            isAlt to InputConstants.MOD_ALT,
+            isSuper to InputConstants.MOD_SUPER,
+            isCapsLock to InputConstants.MOD_CAPS_LOCK,
+            isNumLock to InputConstants.MOD_NUM_LOCK
         ).sumOf { (value, mod) -> if (value) mod else 0 }
     }
 }

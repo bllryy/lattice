@@ -98,13 +98,7 @@ interface CommandParser<T> {
                                 val value = enumMap[builder.toString()]
                                 if (value != null) return value
                             }
-                            throw SyntaxException(
-                                //#if MC == 1.8.9
-                                //$$ "Invalid argument (valid arguments: ${enumMap.keys.joinToString(separator = ", ") { it }}) for command"
-                                //#else
-                                "Invalid argument for command"
-                                //#endif
-                            )
+                            throw SyntaxException("Invalid argument for command")
                         }
 
                         override fun suggestions(): Collection<String> {

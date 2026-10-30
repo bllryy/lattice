@@ -5,13 +5,14 @@ major decisions and what changed relative to the two parents.
 
 ## Module layout
 
-Single Gradle module; boundaries are packages with a strict dependency
-direction (lower layers never import higher ones):
+One source module, compiled per Minecraft version via Stonecutter; boundaries
+are packages with a strict dependency direction (lower layers never import
+higher ones):
 
 ```
 event/       EventBus, EventCall, lifecycle/tick/render events
 client/      Minecraft wrappers: Client, Player, Chat, Clipboard, Desktop, Loader
-input/       GLFW-backed Keys/Mouse/Keyboard, InputCode abstraction
+input/       Keys/Mouse/Keyboard over Minecraft's InputConstants, InputCode abstraction
 render/      Renderer interface, NVGRenderer, Font/Image/Color/Gradient, Resolution, GLState
 scheduler/   TickScheduler (game ticks), TimeScheduler (wall clock)
 animation/   Animation core, manager, element extensions, presets
@@ -57,9 +58,16 @@ constructor defaults now read `Theme` (accent, surfaces, borders, text,
 track/scrollbar, animation durations), initialized to the exact Vexel palette
 so the rendered result is unchanged. Aether's theme system inspired the shape.
 
-**Fabric-only, current-version-only.** Knit carried multi-loader preprocessor
-blocks (Forge/NeoForge) and multi-version conditionals that this port could
-never exercise. All of it is gone; `client.Loader` is a thin Fabric wrapper.
+**Fabric-only, but multi-version.** Knit carried multi-loader preprocessor
+blocks (Forge/NeoForge) that this port could never exercise — those are gone;
+`client.Loader` is a thin Fabric wrapper. Lattice itself compiles for every
+supported Minecraft version (26.1.2, 26.2, 26.3) from a single source tree via
+[Stonecutter](https://stonecutter.kikugie.dev/); version-specific code is
+marked with `//? if >=26.3 { ... }` comments and per-version dependency
+versions live in `stonecutter.properties.toml`. The `client.Client`, `input.*`
+and `render.*` wrappers absorb most version differences — screen handling moved
+off `Minecraft` to `Gui` in 26.2, and key codes switched from GLFW to SDL
+scancodes in 26.3 — so your code usually needs no conditionals of its own.
 
 ## Deleted dead code
 

@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,10 +18,29 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build and test
+      # Builds lattice and the example mod for every Minecraft version in settings.gradle.kts.
+      - name: Build all versions
         run: ./gradlew build --stacktrace
 
-      - uses: actions/upload-artifact@v4
+      # actions/upload-artifact@v4 refuses to run outside github.com; Forgejo's fork works.
+      - uses: https://code.forgejo.org/forgejo/upload-artifact@v4
         with:
           name: lattice
-          path: build/libs/*.jar
+          path: |
+            versions/*/build/libs/*.jar
+            example/versions/*/build/libs/*.jar
+
+      # Pushing a tag like v1.1.0 publishes every Minecraft version to the Maven.
+      - name: Publish to Maven
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          MAVEN_URL: https://bllry.com/maven
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        run: |
+          version=$(sed -n 's/^mod_version=//p' gradle.properties)
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} does not match mod_version ${version} in gradle.properties"
+            exit 1
+          fi
+          ./gradlew publishAllPublicationsToBllryRepository --stacktrace

@@ -176,6 +176,7 @@ abstract class Element<T : Element<T>>(
     }
 
     fun drawAsRoot() {
+        if (!renderer.isAvailable) return
         renderer.beginFrame(screenWidth.toFloat(), screenHeight.toFloat())
         renderer.push()
         render(Mouse.Raw.x.toFloat(), Mouse.Raw.y.toFloat())

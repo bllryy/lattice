@@ -1,7 +1,9 @@
 package xyz.meowing.lattice.input
 
 import com.mojang.blaze3d.platform.InputConstants
-import org.lwjgl.glfw.GLFW
+//? if <26.3 {
+/*import org.lwjgl.glfw.GLFW
+*///?}
 
 object Inputs {
     fun get(code: Int): InputCode {
@@ -15,7 +17,11 @@ object Inputs {
     @JvmStatic
     @JvmOverloads
     fun getDisplayName(code: Int, scanCode: Int = -1): String {
-        val keyName = GLFW.glfwGetKeyName(code, scanCode)
+        //? if >=26.3 {
+        // 26.3 key codes are already SDL scancodes, so scanCode adds nothing.
+        val name = InputConstants.Type.KEYBOARD.getOrCreate(code).displayName.string
+        //?} else {
+        /*val keyName = GLFW.glfwGetKeyName(code, scanCode)
         if (keyName != null) {
             return if (keyName.length == 1) keyName.uppercase() else keyName
         }
@@ -24,6 +30,7 @@ object Inputs {
         } else {
             InputConstants.Type.KEYSYM.getOrCreate(code)
         }).displayName.string
+        *///?}
         return if (name.length == 1) name.uppercase() else name
     }
 }

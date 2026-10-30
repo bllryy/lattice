@@ -1,6 +1,10 @@
 package xyz.meowing.lattice.mixins;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
+//? if >=26.3 {
+import com.mojang.renderpearl.backend.opengl.GlStateManager;
+//?} else {
+/*import com.mojang.blaze3d.opengl.GlStateManager;
+*///?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

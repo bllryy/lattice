@@ -47,3 +47,11 @@ mappings below. Behavior is preserved unless noted in
   now `assets/lattice/*`.
 - **Widget palette** now flows through `ui.theme.Theme`; values are
   unchanged, but you can retheme globally.
+- **Screen access is version-agnostic through `Client`.** Vanilla moved the
+  open screen off `Minecraft` onto `Gui` in 26.2. Use `Client.screen` and
+  `Client.openScreen(...)` (and `Client.chat`, `Client.mainRenderTarget`)
+  instead of `minecraft.screen` / `minecraft.setScreen(...)` so your code
+  compiles on every supported version.
+- **Key codes follow Minecraft, not GLFW.** `input.Keys` values are
+  `InputConstants` key codes — GLFW key codes before 26.3, SDL scancodes from
+  26.3. Compare against `Keys.*` rather than hardcoding numeric codes.

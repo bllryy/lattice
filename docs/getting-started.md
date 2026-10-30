@@ -2,20 +2,21 @@
 
 ## Dependency
 
-Publish Lattice to your local Maven repository:
+Add the Maven repository and the artifact for your Minecraft version
+(`lattice-26.1.2-fabric`, `lattice-26.2-fabric` or `lattice-26.3-fabric`):
 
-```sh
-nix-shell --run './gradlew publish'
-```
+```kotlin
+repositories {
+    maven("https://bllry.com/maven")
+}
 
-Then in your mod:
-
-```groovy
-repositories { mavenLocal() }
 dependencies {
-    implementation "xyz.meowing:lattice-26.1.2-fabric:1.0.0"
+    implementation("xyz.meowing:lattice-26.3-fabric:1.1.0")
 }
 ```
+
+To try local changes, run `./gradlew publishToMavenLocal` in this repository
+and add `mavenLocal()` to your repositories.
 
 Declare `"lattice": "*"` in your `fabric.mod.json` `depends` block so the
 loader orders things correctly.

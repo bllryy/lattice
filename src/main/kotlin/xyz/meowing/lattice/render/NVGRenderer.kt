@@ -1,7 +1,11 @@
 package xyz.meowing.lattice.render
 
-import com.mojang.blaze3d.opengl.GlStateManager
 import com.mojang.blaze3d.systems.RenderSystem
+//? if >=26.3 {
+import com.mojang.renderpearl.backend.opengl.GlStateManager
+//?} else {
+/*import com.mojang.blaze3d.opengl.GlStateManager
+*///?}
 import org.apache.logging.log4j.LogManager
 import org.lwjgl.nanovg.NVGColor
 import org.lwjgl.nanovg.NVGPaint
@@ -15,7 +19,7 @@ import org.lwjgl.opengl.GL30
 import org.lwjgl.opengl.GL33C
 import org.lwjgl.stb.STBImage
 import org.lwjgl.system.MemoryUtil
-import xyz.meowing.lattice.client.Client.minecraft
+import xyz.meowing.lattice.client.Client
 import xyz.meowing.lattice.render.Color.Companion.alpha
 import xyz.meowing.lattice.render.Color.Companion.blue
 import xyz.meowing.lattice.render.Color.Companion.green
@@ -41,13 +45,25 @@ object NVGRenderer : Renderer {
 
     private var vg = -1L
 
-    init {
-        vg = NanoVGGL3.nvgCreate(NanoVGGL3.NVG_ANTIALIAS or NanoVGGL3.NVG_STENCIL_STROKES)
-        require(vg != -1L) { "Failed to initialize NanoVG" }
+    // NanoVG draws with OpenGL; 26.2+ can run on Vulkan instead, where it has to stay off.
+    override val isAvailable: Boolean by lazy {
+        val backend = RenderSystem.getDevice()?.let { fieldValue(it, "backend") }
+        val openGL = backend == null || backend.javaClass.simpleName.startsWith("Gl")
+        if (!openGL) {
+            LogManager.getLogger("Lattice").warn("Lattice rendering is disabled: NanoVG needs the OpenGL backend, but Minecraft is running on ${backend.javaClass.simpleName}. Set Graphics API to OpenGL in Video Settings.")
+        }
+        openGL
     }
 
-    // Resolved reflectively once: GlTexture.getFbo(GlStateManager$DirectStateAccess, depth) is not public API.
-    private var fboLookup: Pair<Any, Method>? = null
+    init {
+        if (isAvailable) {
+            vg = NanoVGGL3.nvgCreate(NanoVGGL3.NVG_ANTIALIAS or NanoVGGL3.NVG_STENCIL_STROKES)
+            require(vg != -1L) { "Failed to initialize NanoVG" }
+        }
+    }
+
+    // Resolved reflectively once: the GL backend's framebuffer lookup is not public API.
+    private var fboLookup: ((Any, Any?) -> Int)? = null
     private var fboLookupFailed = false
     private var loggedFbo = false
 
@@ -63,6 +79,16 @@ object NVGRenderer : Renderer {
         return null
     }
 
+    private fun findMethod(start: Class<*>, name: String, parameterCount: Int): Method {
+        var clazz: Class<*>? = start
+        while (clazz != null) {
+            clazz.declaredMethods.firstOrNull { it.name == name && it.parameterCount == parameterCount }
+                ?.let { return it.apply { isAccessible = true } }
+            clazz = clazz.superclass
+        }
+        throw IllegalStateException("no $name")
+    }
+
     private fun mainFramebuffer(colorTex: Any, depthTex: Any?): Int {
         if (fboLookupFailed) return 0
 
@@ -74,21 +100,23 @@ object NVGRenderer : Renderer {
                 val dsa = fieldValue(backend, "directStateAccess")
                     ?: throw IllegalStateException("no directStateAccess")
 
-                var getFbo: Method? = null
-                var texClazz: Class<*>? = colorTex.javaClass
-                while (texClazz != null && getFbo == null) {
-                    getFbo = texClazz.declaredMethods.firstOrNull { it.name == "getFbo" && it.parameterCount == 2 }
-                    texClazz = texClazz.superclass
-                }
-                getFbo?.isAccessible = true
-                if (getFbo == null) throw IllegalStateException("no getFbo")
-
-                Pair(dsa, getFbo).also { fboLookup = it }
+                // 26.2+ caches FBOs per attachment set: FrameBufferCache.getFbo(dsa, colors, depth).
+                // Before that each color texture cached its own: GlTexture.getFbo(dsa, depth).
+                //? if >=26.2 {
+                val cache = fieldValue(backend, "frameBufferCache")
+                    ?: throw IllegalStateException("no frameBufferCache")
+                val getFbo = findMethod(cache.javaClass, "getFbo", 3)
+                val newLookup: (Any, Any?) -> Int = { color, depth -> getFbo.invoke(cache, dsa, listOf(color), depth) as Int }
+                //?} else {
+                /*val getFbo = findMethod(colorTex.javaClass, "getFbo", 2)
+                val newLookup: (Any, Any?) -> Int = { color, depth -> getFbo.invoke(color, dsa, depth) as Int }
+                *///?}
+                newLookup.also { fboLookup = it }
             }
 
             // Pass the depth texture so getFbo returns the FBO with the depth+stencil
             // attachment; NanoVG's stencil fills render nothing on a color-only FBO.
-            return (lookup.second.invoke(colorTex, lookup.first, depthTex) as? Int) ?: 0
+            return lookup(colorTex, depthTex)
         } catch (e: Throwable) {
             fboLookupFailed = true
             LogManager.getLogger("Lattice").warn("FBO lookup failed: device=${RenderSystem.getDevice()?.javaClass?.name} color=${colorTex.javaClass.name} depth=${depthTex?.javaClass?.name}", e)
@@ -102,7 +130,7 @@ object NVGRenderer : Renderer {
         GLState.previousActiveTexture = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE)
         GLState.previousProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM)
 
-        val renderTarget = minecraft.mainRenderTarget ?: return
+        val renderTarget = Client.mainRenderTarget
         val colorTex = renderTarget.getColorTexture() ?: return
         if (vg == -1L) return
 
@@ -135,7 +163,11 @@ object NVGRenderer : Renderer {
         // Restore the default state vanilla expects after NanoVG's frame.
         GlStateManager._disableCull()
         GlStateManager._disableDepthTest()
-        GlStateManager._enableBlend()
+        //? if >=26.2 {
+        GlStateManager._enableBlend(0)
+        //?} else {
+        /*GlStateManager._enableBlend()
+        *///?}
         GlStateManager._blendFuncSeparate(770, 771, 1, 0)
 
         // NanoVG's stencil strokes can leave the stencil test on and the color mask off.
@@ -337,6 +369,7 @@ object NVGRenderer : Renderer {
     }
 
     override fun textWidth(text: String, size: Float, font: Font): Float {
+        if (vg == -1L) return 0f
         NanoVG.nvgFontSize(vg, size)
         NanoVG.nvgFontFaceId(vg, getFontID(font))
         return NanoVG.nvgTextBounds(vg, 0f, 0f, text, fontBounds)
@@ -353,6 +386,7 @@ object NVGRenderer : Renderer {
 
     override fun textBounds(text: String, w: Float, size: Float, font: Font, lineHeight: Float): FloatArray {
         val bounds = FloatArray(4)
+        if (vg == -1L) return bounds
         NanoVG.nvgFontSize(vg, size)
         NanoVG.nvgFontFaceId(vg, getFontID(font))
         NanoVG.nvgTextLineHeight(vg, lineHeight)
@@ -418,7 +452,7 @@ object NVGRenderer : Renderer {
         val iter = images.entries.iterator()
         while (iter.hasNext()) {
             val entry = iter.next()
-            NanoVG.nvgDeleteImage(vg, entry.value.nvg)
+            if (vg != -1L) NanoVG.nvgDeleteImage(vg, entry.value.nvg)
             iter.remove()
         }
     }
@@ -427,7 +461,7 @@ object NVGRenderer : Renderer {
         val nvgImage = images[image] ?: return
         nvgImage.count--
         if (nvgImage.count == 0) {
-            NanoVG.nvgDeleteImage(vg, nvgImage.nvg)
+            if (vg != -1L) NanoVG.nvgDeleteImage(vg, nvgImage.nvg)
             images.remove(image)
         }
     }
@@ -436,7 +470,9 @@ object NVGRenderer : Renderer {
         return images[image]?.nvg ?: throw IllegalStateException("Image (${image.identifier}) doesn't exist")
     }
 
+    // Without a NanoVG context (Vulkan backend) images are tracked but never uploaded.
     private fun loadImage(image: Image): Int {
+        if (vg == -1L) return -1
         val w = IntArray(1)
         val h = IntArray(1)
         val channels = IntArray(1)
@@ -446,6 +482,7 @@ object NVGRenderer : Renderer {
     }
 
     private fun loadSVG(image: Image, svgWidth: Int, svgHeight: Int, color: Int): Int {
+        if (vg == -1L) return -1
         var vec = image.stream.use { it.bufferedReader().readText() }
 
         val hexColor = "#%06X".format(color and 0xFFFFFF)

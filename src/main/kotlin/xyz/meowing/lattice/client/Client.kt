@@ -1,7 +1,10 @@
 package xyz.meowing.lattice.client
 
+import com.mojang.blaze3d.pipeline.RenderTarget
 import net.minecraft.SharedConstants
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.components.ChatComponent
+import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.multiplayer.ClientLevel
 import net.minecraft.client.multiplayer.PlayerInfo
 import net.minecraft.client.player.LocalPlayer
@@ -25,6 +28,41 @@ object Client {
 
     @JvmStatic
     val player: LocalPlayer? get() = minecraft.player
+
+    /** The open screen, or null when in game. Screen handling moved from [Minecraft] to `Gui` in 26.2. */
+    @JvmStatic
+    val screen: Screen?
+        //? if >=26.2 {
+        get() = minecraft.gui.screen()
+        //?} else {
+        /*get() = minecraft.screen
+        *///?}
+
+    /** Opens [screen], or closes the current one when null. Must run on the render thread. */
+    @JvmStatic
+    fun openScreen(screen: Screen?) {
+        //? if >=26.2 {
+        minecraft.gui.setScreen(screen)
+        //?} else {
+        /*minecraft.setScreen(screen)
+        *///?}
+    }
+
+    @JvmStatic
+    val chat: ChatComponent
+        //? if >=26.2 {
+        get() = minecraft.gui.hud.getChat()
+        //?} else {
+        /*get() = minecraft.gui.getChat()
+        *///?}
+
+    @JvmStatic
+    val mainRenderTarget: RenderTarget
+        //? if >=26.2 {
+        get() = minecraft.gameRenderer.mainRenderTarget()
+        //?} else {
+        /*get() = minecraft.mainRenderTarget
+        *///?}
 
     @JvmStatic
     val minecraftVersion: String by lazy {

@@ -6,6 +6,7 @@ import net.minecraft.client.input.CharacterEvent
 import net.minecraft.client.input.MouseButtonEvent
 import net.minecraft.network.chat.Component
 import xyz.meowing.lattice.Lattice.eventBus
+import xyz.meowing.lattice.client.Client
 import xyz.meowing.lattice.client.Client.minecraft
 import xyz.meowing.lattice.event.EventCall
 import xyz.meowing.lattice.event.RenderEvent
@@ -38,7 +39,7 @@ abstract class UIScreen(screenName: String = "Lattice-Screen") : Screen(Componen
             afterInitialization()
 
             renderEvent = eventBus.register<RenderEvent.Gui> {
-                if (minecraft.screen == this) {
+                if (Client.screen == this) {
                     window.draw()
                     onRenderGui()
                 }
@@ -74,7 +75,12 @@ abstract class UIScreen(screenName: String = "Lattice-Screen") : Screen(Componen
     }
 
     override fun keyPressed(input: net.minecraft.client.input.KeyEvent): Boolean {
-        val handled = window.charType(input.key(), input.scancode(), ' ')
+        //? if >=26.3 {
+        // 26.3 key codes are SDL scancodes, so the key doubles as the scan code.
+        val handled = window.charType(input.key(), input.key(), ' ')
+        //?} else {
+        /*val handled = window.charType(input.key(), input.scancode(), ' ')
+        *///?}
         if (!handled && input.key() == Keys.KEY_ESCAPE.code) {
             onClose()
             return true
@@ -98,7 +104,7 @@ abstract class UIScreen(screenName: String = "Lattice-Screen") : Screen(Componen
     /** Opens this screen on the render thread, safe to call from any thread. */
     fun display() {
         TimeScheduler.schedule(50) {
-            minecraft.execute { minecraft.setScreen(this@UIScreen) }
+            minecraft.execute { Client.openScreen(this@UIScreen) }
         }
     }
 }

@@ -1,10 +1,6 @@
-# IMPORTANT NOTICE
-- Library is Mirrored with
-```https://git.bllry.com/lily-admin/lattice```
-
 # Lattice
 
-Unified UI framework for Minecraft clients on Fabric (Minecraft 26.1.2).
+Unified UI framework for Minecraft clients on Fabric (Minecraft 26.1.2, 26.2 and 26.3).
 Lattice supersedes **Knit** (client base library) and **Vexel** (NanoVG UI
 library), merging both into one dependency with a single event bus, one input
 abstraction, and one screen stack.
@@ -22,24 +18,52 @@ abstraction, and one screen stack.
 
 ## Install
 
-```maven { url = 'https://bllry.com/maven' }```
+Lattice is published per Minecraft version as `xyz.meowing:lattice-<minecraft>-fabric`:
 
-### Version 1.0.0
+| Minecraft | Artifact                | Latest |
+|-----------|-------------------------|--------|
+| 26.3      | `lattice-26.3-fabric`   | 1.1.0  |
+| 26.2      | `lattice-26.2-fabric`   | 1.1.0  |
+| 26.1.2    | `lattice-26.1.2-fabric` | 1.1.0  |
 
 ### Gradle
 
-```implementation 'xyz.meowing:lattice-26.1.2-fabric:1.0.0```
+```kotlin
+repositories {
+    maven("https://bllry.com/maven")
+}
 
-
-Maven
-
+dependencies {
+    implementation("xyz.meowing:lattice-26.3-fabric:1.1.0")
+}
 ```
+
+### Maven
+
+```xml
+<repository>
+  <id>bllry</id>
+  <url>https://bllry.com/maven</url>
+</repository>
+
 <dependency>
   <groupId>xyz.meowing</groupId>
-  <artifactId>lattice-26.1.2-fabric</artifactId>
-  <version>1.0.0</version>
+  <artifactId>lattice-26.3-fabric</artifactId>
+  <version>1.1.0</version>
 </dependency>
 ```
+
+On 26.2 and newer, Lattice renders only with Minecraft's OpenGL backend (the
+default). If a player switches the Graphics API to Vulkan, Lattice logs a warning
+and skips drawing.
+
+The public API is version-agnostic: `client.Client`, `input.*`, and `render.*`
+absorb the per-version differences, so a mod written against one version
+usually compiles unchanged against the others. Use `Client.screen` /
+`Client.openScreen(...)` rather than `minecraft.screen` /
+`minecraft.setScreen(...)` (screen handling moved off `Minecraft` in 26.2), and
+compare against `Keys.*` instead of hardcoding key codes (values are GLFW key
+codes before 26.3 and SDL scancodes from 26.3).
 
 ## Documentation
 
@@ -54,9 +78,32 @@ opens a screen showing every widget; `/lattice hud`, `/lattice chat`, and
 
 ## Building
 
-With Nix: `nix-shell --run './gradlew build'` (requires JDK 25 otherwise).
-Publish to your local Maven repository with `./gradlew publish`
-(artifact `xyz.meowing:lattice-26.1.2-fabric`).
+Requires JDK 25 (with Nix: `nix-shell --run './gradlew build'`).
+
+The build uses [Stonecutter](https://stonecutter.kikugie.dev/) to compile the
+shared `src/` for every Minecraft version listed in `settings.gradle.kts`.
+Version-specific code is marked with `//? if >=26.3 { ... }` comments, and
+per-version dependency versions live in `stonecutter.properties.toml`.
+
+- `./gradlew build` builds every version into `versions/<minecraft>/build/libs/`
+  (the example mod lands in `example/versions/<minecraft>/build/libs/`).
+- `./gradlew :26.3:build` builds a single version.
+- `./gradlew "Set active project to 26.2"` switches `src/` to show 26.2's code
+  in the IDE. Run `./gradlew "Reset active project"` (back to 26.3) before committing.
+- `./gradlew :26.3:deployMods` copies the lattice and example jars into a mods
+  folder (override with `-PmodsDir=...`).
+- `./gradlew publishToMavenLocal` installs all versions to `~/.m2`.
+
+### Releasing
+
+CI (`.forgejo/workflows/ci.yml`) builds every version on each push. To release,
+bump `mod_version` in `gradle.properties`, commit, and push a matching tag
+(`v1.1.0`). The tag build publishes all versions to `https://bllry.com/maven`
+using the `MAVEN_USERNAME` / `MAVEN_PASSWORD` repository secrets.
+
+To publish by hand, run `./gradlew publishAllPublicationsToBllryRepository` with
+`MAVEN_URL`, `MAVEN_USERNAME` and `MAVEN_PASSWORD` set. Without `MAVEN_URL` it
+writes a plain Maven repository to `build/maven/` instead.
 
 Runtime NanoVG natives ship for linux, linux-arm64, windows, macos, and
 macos-arm64.

@@ -21,7 +21,7 @@ object Chat {
 
     @JvmStatic
     fun fakeMessage(message: Component) {
-        minecraft.gui.getChat().addClientSystemMessage(message)
+        Client.chat.addClientSystemMessage(message)
     }
 
     @JvmStatic

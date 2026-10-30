@@ -52,7 +52,17 @@ NanoVG. The bundled default is `Lattice.defaultFont`.
 SVG (tint replaces `currentColor`); images are reference-counted — pair with
 `deleteImage`. Paths resolve as classpath resources or filesystem paths.
 
+## Availability
+
+`Renderer` exposes `isAvailable` (defaults to `true`). `NVGRenderer` returns
+`false` when Minecraft is running on a non-OpenGL backend — 26.2 and newer can
+render through Vulkan, but NanoVG draws with OpenGL, so Lattice logs a warning
+and skips all frames instead of crashing. `Lattice.renderer` and `UIScreen`
+both check `isAvailable`, so nothing draws while it's disabled. Switch the
+Graphics API back to OpenGL (Video Settings) to re-enable rendering.
+
 ## Custom backends
 
 `Renderer` is an interface; swap the implementation with
-`Lattice.renderer = MyRenderer`.
+`Lattice.renderer = MyRenderer`. Return `isAvailable = false` to make Lattice
+skip frames the same way.
