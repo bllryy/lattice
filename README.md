@@ -1,5 +1,5 @@
 # IMPORTANT NOTICE
-- LIBRARY IS MOVING SOON!!!
+- Library is Mirrored with
 ```https://git.bllry.com/lily-admin/lattice```
 
 # Lattice
